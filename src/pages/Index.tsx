@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +20,7 @@ import FutureInsights from "@/components/dashboard/FutureInsights";
 import AddTransactionDialog from "@/components/dashboard/AddTransactionDialog";
 import IncomeChart from "@/components/dashboard/IncomeChart";
 import BudgetForm from "@/components/dashboard/BudgetForm";
+import StatisticsSection from "@/components/dashboard/StatisticsSection";
 
 // Define Transaction type
 interface Transaction {
@@ -331,6 +331,12 @@ const Dashboard = () => {
                 <IncomeChart data={generateIncomeData()} />
               </TabsContent>
             </Tabs>
+            
+            <StatisticsSection 
+              transactions={transactions}
+              monthlyIncome={income}
+              monthlyExpenses={expenses}
+            />
             
             <FutureInsights 
               profileType={profile.type}
