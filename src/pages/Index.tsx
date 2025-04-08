@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { IndianRupee, Plus, Search } from "lucide-react";
+import { IndianRupee, Search } from "lucide-react";
 
 // Custom components
 import Logo from "@/components/Logo";
@@ -19,6 +19,7 @@ import ProfileSelection from "@/components/dashboard/ProfileSelection";
 import SavingsTips from "@/components/dashboard/SavingsTips";
 import ExportData from "@/components/dashboard/ExportData";
 import FutureInsights from "@/components/dashboard/FutureInsights";
+import AddTransactionDialog from "@/components/dashboard/AddTransactionDialog";
 
 // Define Transaction type
 interface Transaction {
@@ -30,33 +31,7 @@ interface Transaction {
   category: string;
 }
 
-// Mock data
-const mockTransactions: Transaction[] = [
-  { id: "tx1", name: "Salary", amount: 50000, type: 'income', date: "April 1, 2025", category: "Income" },
-  { id: "tx2", name: "Grocery Shopping", amount: 2500, type: 'expense', date: "April 5, 2025", category: "Food" },
-  { id: "tx3", name: "Electricity Bill", amount: 1800, type: 'expense', date: "April 6, 2025", category: "Utilities" },
-  { id: "tx4", name: "Movie Tickets", amount: 600, type: 'expense', date: "April 7, 2025", category: "Entertainment" },
-  { id: "tx5", name: "Freelance Work", amount: 15000, type: 'income', date: "April 10, 2025", category: "Income" },
-  { id: "tx6", name: "Restaurant", amount: 1200, type: 'expense', date: "April 12, 2025", category: "Food" },
-];
-
-const mockCashFlowData = [
-  { name: "Jan", income: 45000, expense: 30000 },
-  { name: "Feb", income: 48000, expense: 32000 },
-  { name: "Mar", income: 52000, expense: 34000 },
-  { name: "Apr", income: 65000, expense: 36000 },
-  { name: "May", income: 50000, expense: 35000 },
-  { name: "Jun", income: 55000, expense: 37000 },
-];
-
-const mockExpenseData = [
-  { name: "Food", value: 8000, color: "#FFC107" },
-  { name: "Transport", value: 6000, color: "#2196F3" },
-  { name: "Entertainment", value: 4000, color: "#673AB7" },
-  { name: "Utilities", value: 5000, color: "#009688" },
-  { name: "Shopping", value: 7000, color: "#F44336" },
-];
-
+// Mock reminders
 const mockReminders = [
   { id: "rem1", title: "Electricity Bill", amount: 2000, dueDate: "Apr 8, 2025" },
   { id: "rem2", title: "Credit Card Payment", amount: 8000, dueDate: "Apr 15, 2025" },
@@ -65,9 +40,9 @@ const mockReminders = [
 // Budget categories for different profiles
 const getBudgetCategoriesForProfile = (profileType: string) => {
   const commonCategories = [
-    { category: "Food and Drinks", spent: 8000, budget: 10000, color: "yellow", icon: "food" },
-    { category: "Transportation", spent: 6000, budget: 6000, color: "blue", icon: "transport" },
-    { category: "Shopping", spent: 7000, budget: 5000, color: "red", icon: "shopping" },
+    { category: "Food and Drinks", spent: 0, budget: 10000, color: "yellow", icon: "food" },
+    { category: "Transportation", spent: 0, budget: 6000, color: "blue", icon: "transport" },
+    { category: "Shopping", spent: 0, budget: 5000, color: "red", icon: "shopping" },
   ];
   
   // Add profile-specific categories
@@ -75,28 +50,34 @@ const getBudgetCategoriesForProfile = (profileType: string) => {
     case 'student':
       return [
         ...commonCategories,
-        { category: "Education", spent: 15000, budget: 20000, color: "purple", icon: "home" },
-        { category: "Entertainment", spent: 4000, budget: 3000, color: "teal", icon: "home" },
+        { category: "Education", spent: 0, budget: 20000, color: "purple", icon: "home" },
+        { category: "Entertainment", spent: 0, budget: 3000, color: "teal", icon: "home" },
       ];
     case 'business':
       return [
         ...commonCategories,
-        { category: "Business Expenses", spent: 25000, budget: 30000, color: "purple", icon: "business" },
-        { category: "Marketing", spent: 10000, budget: 15000, color: "teal", icon: "home" },
+        { category: "Business Expenses", spent: 0, budget: 30000, color: "purple", icon: "business" },
+        { category: "Marketing", spent: 0, budget: 15000, color: "teal", icon: "home" },
       ];
     case 'housewife':
       return [
         ...commonCategories,
-        { category: "Household", spent: 12000, budget: 15000, color: "purple", icon: "home" },
-        { category: "Children", spent: 8000, budget: 10000, color: "teal", icon: "home" },
+        { category: "Household", spent: 0, budget: 15000, color: "purple", icon: "home" },
+        { category: "Children", spent: 0, budget: 10000, color: "teal", icon: "home" },
       ];
     default: // salary employee
       return [
         ...commonCategories,
-        { category: "Housing", spent: 15000, budget: 18000, color: "purple", icon: "home" },
-        { category: "Entertainment", spent: 5000, budget: 5000, color: "teal", icon: "home" },
+        { category: "Housing", spent: 0, budget: 18000, color: "purple", icon: "home" },
+        { category: "Entertainment", spent: 0, budget: 5000, color: "teal", icon: "home" },
       ];
   }
+};
+
+// Get the list of all unique categories based on profile type
+const getAllCategories = (profileType: string) => {
+  const budgetCategories = getBudgetCategoriesForProfile(profileType);
+  return budgetCategories.map(cat => cat.category);
 };
 
 const Dashboard = () => {
@@ -105,23 +86,115 @@ const Dashboard = () => {
     type: "salary" 
   });
   
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgetCategories, setBudgetCategories] = useState(getBudgetCategoriesForProfile(profile.type));
+  const [categories, setCategories] = useState<string[]>(getAllCategories(profile.type));
   
   // Calculate totals
-  const income = mockTransactions
+  const income = transactions
     .filter(tx => tx.type === 'income')
     .reduce((sum, tx) => sum + tx.amount, 0);
     
-  const expenses = mockTransactions
+  const expenses = transactions
     .filter(tx => tx.type === 'expense')
     .reduce((sum, tx) => sum + tx.amount, 0);
     
   const balance = income - expenses;
   
+  // Update budget categories when transactions change
+  useEffect(() => {
+    const updatedCategories = [...budgetCategories];
+    
+    // Reset spent amounts
+    updatedCategories.forEach(cat => {
+      cat.spent = 0;
+    });
+    
+    // Calculate new spent amounts based on transactions
+    transactions.forEach(tx => {
+      if (tx.type === 'expense') {
+        const categoryIndex = updatedCategories.findIndex(cat => cat.category === tx.category);
+        if (categoryIndex !== -1) {
+          updatedCategories[categoryIndex].spent += tx.amount;
+        }
+      }
+    });
+    
+    setBudgetCategories(updatedCategories);
+  }, [transactions]);
+  
   // Update budget categories when profile changes
   useEffect(() => {
     setBudgetCategories(getBudgetCategoriesForProfile(profile.type));
+    setCategories(getAllCategories(profile.type));
   }, [profile.type]);
+  
+  // Generate chart data from transactions
+  const generateCashFlowData = () => {
+    // Create a map of months with default values
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const data = months.map(month => ({
+      name: month,
+      income: 0,
+      expense: 0
+    }));
+    
+    // Add actual data from transactions if any
+    if (transactions.length > 0) {
+      // This is a simplified example for demo purposes
+      // In a real app, you would map transactions to actual months
+      let monthIndex = 0;
+      const incomeByMonth: Record<string, number> = {};
+      const expenseByMonth: Record<string, number> = {};
+      
+      // Group transactions by month (simplified)
+      transactions.forEach(tx => {
+        const month = tx.date.split(' ')[0].substring(0, 3);
+        if (tx.type === 'income') {
+          incomeByMonth[month] = (incomeByMonth[month] || 0) + tx.amount;
+        } else {
+          expenseByMonth[month] = (expenseByMonth[month] || 0) + tx.amount;
+        }
+      });
+      
+      // Update the chart data
+      data.forEach(item => {
+        if (incomeByMonth[item.name]) {
+          item.income = incomeByMonth[item.name];
+        }
+        if (expenseByMonth[item.name]) {
+          item.expense = expenseByMonth[item.name];
+        }
+      });
+    }
+    
+    return data;
+  };
+  
+  // Generate expense data for pie chart
+  const generateExpenseData = () => {
+    const colors = ["#FFC107", "#2196F3", "#673AB7", "#009688", "#F44336"];
+    
+    // Group expenses by category
+    const expenseByCategory: Record<string, number> = {};
+    transactions
+      .filter(tx => tx.type === 'expense')
+      .forEach(tx => {
+        expenseByCategory[tx.category] = (expenseByCategory[tx.category] || 0) + tx.amount;
+      });
+    
+    // Convert to array format for the pie chart
+    return Object.entries(expenseByCategory).map(([name, value], index) => ({
+      name,
+      value,
+      color: colors[index % colors.length]
+    }));
+  };
+  
+  // Handle adding a new transaction
+  const handleAddTransaction = (transaction: Transaction) => {
+    setTransactions(prev => [...prev, transaction]);
+  };
   
   // Handle profile change
   const handleProfileChange = (name: string, type: string) => {
@@ -165,13 +238,10 @@ const Dashboard = () => {
                   })}
                 </p>
               </div>
-              <Button 
-                size="sm" 
-                className="bg-white/20 text-white hover:bg-white/30"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
+              <AddTransactionDialog 
+                onAddTransaction={handleAddTransaction}
+                categories={categories}
+              />
             </div>
             
             <div className="grid grid-cols-3 gap-3 mb-6">
@@ -183,22 +253,29 @@ const Dashboard = () => {
             <div className="flex flex-col gap-4">
               <h2 className="font-medium">Recent Transactions</h2>
               <div className="space-y-3">
-                {mockTransactions.slice(0, 4).map((transaction) => (
-                  <div 
-                    key={transaction.id} 
-                    className="flex items-center justify-between p-3 bg-white/10 rounded-lg"
-                  >
-                    <div>
-                      <div className="font-medium">{transaction.name}</div>
-                      <div className="text-xs text-white/70">{transaction.date}</div>
-                    </div>
-                    <div className={`${transaction.type === 'income' ? 'text-budget-light-green' : 'text-budget-light-red'} font-semibold flex items-center`}>
-                      {transaction.type === 'income' ? '+' : '-'}
-                      <IndianRupee className="h-3 w-3 mr-0.5" />
-                      {transaction.amount.toLocaleString()}
-                    </div>
+                {transactions.length === 0 ? (
+                  <div className="p-3 bg-white/10 rounded-lg text-center">
+                    <p>No transactions yet</p>
+                    <p className="text-xs text-white/70">Add your first transaction using the Add button</p>
                   </div>
-                ))}
+                ) : (
+                  transactions.slice(0, 4).map((transaction) => (
+                    <div 
+                      key={transaction.id} 
+                      className="flex items-center justify-between p-3 bg-white/10 rounded-lg"
+                    >
+                      <div>
+                        <div className="font-medium">{transaction.name}</div>
+                        <div className="text-xs text-white/70">{transaction.date}</div>
+                      </div>
+                      <div className={`${transaction.type === 'income' ? 'text-budget-light-green' : 'text-budget-light-red'} font-semibold flex items-center`}>
+                        {transaction.type === 'income' ? '+' : '-'}
+                        <IndianRupee className="h-3 w-3 mr-0.5" />
+                        {transaction.amount.toLocaleString()}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </Card>
@@ -207,7 +284,7 @@ const Dashboard = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold">Budgets</h2>
-              <ExportData transactions={mockTransactions} />
+              <ExportData transactions={transactions} />
             </div>
             
             <div>
@@ -239,21 +316,21 @@ const Dashboard = () => {
                 <TabsTrigger value="expenses" className="flex-1">Expenses</TabsTrigger>
               </TabsList>
               <TabsContent value="cash-flow" className="mt-4">
-                <CashFlowChart data={mockCashFlowData} />
+                <CashFlowChart data={generateCashFlowData()} />
               </TabsContent>
               <TabsContent value="expenses" className="mt-4">
-                <ExpensePieChart data={mockExpenseData} />
+                <ExpensePieChart data={generateExpenseData()} />
               </TabsContent>
             </Tabs>
             
             <FutureInsights 
               profileType={profile.type}
-              currentSavings={100000}
+              currentSavings={balance > 0 ? balance : 0}
               monthlyIncome={income}
               monthlyExpenses={expenses}
             />
             
-            <RecentTransactions transactions={mockTransactions} />
+            <RecentTransactions transactions={transactions} />
           </div>
         </div>
       </main>

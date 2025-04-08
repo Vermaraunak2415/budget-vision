@@ -19,6 +19,13 @@ interface ExportDataProps {
 
 const ExportData = ({ transactions }: ExportDataProps) => {
   const formatTransactionsForExport = () => {
+    if (!transactions.length) {
+      toast.error("No transactions to export", {
+        description: "Add some transactions first"
+      });
+      return null;
+    }
+    
     return transactions.map(t => ({
       Name: t.name,
       Amount: t.amount,
@@ -31,6 +38,8 @@ const ExportData = ({ transactions }: ExportDataProps) => {
   const exportToCSV = () => {
     try {
       const formattedData = formatTransactionsForExport();
+      if (!formattedData) return;
+      
       const headers = Object.keys(formattedData[0]).join(',');
       const csvData = formattedData.map(row => 
         Object.values(row).map(value => 
