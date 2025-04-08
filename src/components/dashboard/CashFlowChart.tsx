@@ -9,7 +9,7 @@ import {
   CartesianGrid, 
   Tooltip 
 } from 'recharts';
-import { Tab, Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { IndianRupee } from "lucide-react";
 

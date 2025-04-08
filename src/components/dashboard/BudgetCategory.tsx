@@ -2,6 +2,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { IndianRupee, ShoppingBag, Car, Pizza, Briefcase, Home } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 interface BudgetCategoryProps {
   category: string;
@@ -60,8 +61,11 @@ const BudgetCategory = ({ category, spent, budget, color, icon }: BudgetCategory
         </div>
         <Progress 
           value={Math.min(percentage, 100)} 
-          className={`h-2 ${isOverBudget ? 'bg-budget-light-red' : `bg-budget-light-${color}`}`}
-          indicatorClassName={`${isOverBudget ? 'bg-budget-red' : `bg-budget-${color}`}`}
+          className={cn(
+            "h-2",
+            isOverBudget ? "bg-budget-light-red" : `bg-budget-light-${color}`,
+            isOverBudget ? "bg-budget-red" : `bg-budget-${color}`
+          )}
         />
       </CardContent>
     </Card>

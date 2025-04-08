@@ -20,8 +20,18 @@ import SavingsTips from "@/components/dashboard/SavingsTips";
 import ExportData from "@/components/dashboard/ExportData";
 import FutureInsights from "@/components/dashboard/FutureInsights";
 
+// Define Transaction type
+interface Transaction {
+  id: string;
+  name: string;
+  amount: number;
+  type: 'income' | 'expense';
+  date: string;
+  category: string;
+}
+
 // Mock data
-const mockTransactions = [
+const mockTransactions: Transaction[] = [
   { id: "tx1", name: "Salary", amount: 50000, type: 'income', date: "April 1, 2025", category: "Income" },
   { id: "tx2", name: "Grocery Shopping", amount: 2500, type: 'expense', date: "April 5, 2025", category: "Food" },
   { id: "tx3", name: "Electricity Bill", amount: 1800, type: 'expense', date: "April 6, 2025", category: "Utilities" },
