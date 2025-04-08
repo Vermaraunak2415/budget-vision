@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { format } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Calendar } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -29,6 +33,7 @@ const AddTransactionDialog = ({ onAddTransaction, categories }: AddTransactionDi
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [category, setCategory] = useState("");
+  const [date, setDate] = useState<Date>(new Date());
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +58,7 @@ const AddTransactionDialog = ({ onAddTransaction, categories }: AddTransactionDi
       name: name.trim(),
       amount: Number(amount),
       type,
-      date: new Date().toLocaleDateString('en-IN', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      }),
+      date: format(date, 'MMMM d, yyyy'),
       category: type === 'income' ? 'Income' : category
     };
     
@@ -73,6 +74,7 @@ const AddTransactionDialog = ({ onAddTransaction, categories }: AddTransactionDi
     setAmount("");
     setType('expense');
     setCategory("");
+    setDate(new Date());
   };
   
   return (
@@ -131,6 +133,34 @@ const AddTransactionDialog = ({ onAddTransaction, categories }: AddTransactionDi
               min="1" 
               placeholder="0.00"
             />
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="date">Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date"
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={date}
+                  onSelect={(newDate) => newDate && setDate(newDate)}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           
           {type === 'expense' && (

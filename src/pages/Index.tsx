@@ -12,7 +12,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 import OverviewCard from "@/components/dashboard/OverviewCard";
 import BudgetCategory from "@/components/dashboard/BudgetCategory";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
-import CashFlowChart from "@/components/dashboard/CashFlowChart";
 import ExpensePieChart from "@/components/dashboard/ExpensePieChart";
 import ReminderNotification from "@/components/dashboard/ReminderNotification";
 import ProfileSelection from "@/components/dashboard/ProfileSelection";
@@ -20,6 +19,8 @@ import SavingsTips from "@/components/dashboard/SavingsTips";
 import ExportData from "@/components/dashboard/ExportData";
 import FutureInsights from "@/components/dashboard/FutureInsights";
 import AddTransactionDialog from "@/components/dashboard/AddTransactionDialog";
+import IncomeChart from "@/components/dashboard/IncomeChart";
+import BudgetForm from "@/components/dashboard/BudgetForm";
 
 // Define Transaction type
 interface Transaction {
@@ -129,48 +130,6 @@ const Dashboard = () => {
     setCategories(getAllCategories(profile.type));
   }, [profile.type]);
   
-  // Generate chart data from transactions
-  const generateCashFlowData = () => {
-    // Create a map of months with default values
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-    const data = months.map(month => ({
-      name: month,
-      income: 0,
-      expense: 0
-    }));
-    
-    // Add actual data from transactions if any
-    if (transactions.length > 0) {
-      // This is a simplified example for demo purposes
-      // In a real app, you would map transactions to actual months
-      let monthIndex = 0;
-      const incomeByMonth: Record<string, number> = {};
-      const expenseByMonth: Record<string, number> = {};
-      
-      // Group transactions by month (simplified)
-      transactions.forEach(tx => {
-        const month = tx.date.split(' ')[0].substring(0, 3);
-        if (tx.type === 'income') {
-          incomeByMonth[month] = (incomeByMonth[month] || 0) + tx.amount;
-        } else {
-          expenseByMonth[month] = (expenseByMonth[month] || 0) + tx.amount;
-        }
-      });
-      
-      // Update the chart data
-      data.forEach(item => {
-        if (incomeByMonth[item.name]) {
-          item.income = incomeByMonth[item.name];
-        }
-        if (expenseByMonth[item.name]) {
-          item.expense = expenseByMonth[item.name];
-        }
-      });
-    }
-    
-    return data;
-  };
-  
   // Generate expense data for pie chart
   const generateExpenseData = () => {
     const colors = ["#FFC107", "#2196F3", "#673AB7", "#009688", "#F44336"];
@@ -191,6 +150,25 @@ const Dashboard = () => {
     }));
   };
   
+  // Generate income data for chart
+  const generateIncomeData = () => {
+    // Group income by month
+    const incomeByMonth: Record<string, number> = {};
+    
+    transactions
+      .filter(tx => tx.type === 'income')
+      .forEach(tx => {
+        const month = tx.date.split(' ')[0].substring(0, 3);
+        incomeByMonth[month] = (incomeByMonth[month] || 0) + tx.amount;
+      });
+    
+    // Convert to array format for the chart
+    return Object.entries(incomeByMonth).map(([month, amount]) => ({
+      name: month,
+      value: amount
+    }));
+  };
+  
   // Handle adding a new transaction
   const handleAddTransaction = (transaction: Transaction) => {
     setTransactions(prev => [...prev, transaction]);
@@ -202,6 +180,32 @@ const Dashboard = () => {
     toast.success("Profile updated", {
       description: `Profile changed to ${name} (${type})`
     });
+  };
+
+  // Handle adding a new budget
+  const handleAddBudget = (category: string, amount: number) => {
+    const updatedCategories = [...budgetCategories];
+    const existingIndex = updatedCategories.findIndex(cat => cat.category === category);
+    
+    if (existingIndex !== -1) {
+      updatedCategories[existingIndex].budget = amount;
+      toast.success("Budget updated", {
+        description: `Budget for ${category} updated to ₹${amount}`
+      });
+    } else {
+      updatedCategories.push({
+        category,
+        spent: 0,
+        budget: amount,
+        color: "gray",
+        icon: "default"
+      });
+      toast.success("Budget added", {
+        description: `New budget for ${category} added`
+      });
+    }
+    
+    setBudgetCategories(updatedCategories);
   };
   
   return (
@@ -287,6 +291,11 @@ const Dashboard = () => {
               <ExportData transactions={transactions} />
             </div>
             
+            <BudgetForm 
+              categories={categories}
+              onAddBudget={handleAddBudget}
+            />
+            
             <div>
               {budgetCategories.map((item, index) => (
                 <BudgetCategory
@@ -310,16 +319,16 @@ const Dashboard = () => {
           
           {/* Right column */}
           <div className="space-y-6 md:col-span-2 lg:col-span-1">
-            <Tabs defaultValue="cash-flow">
+            <Tabs defaultValue="expenses">
               <TabsList className="w-full">
-                <TabsTrigger value="cash-flow" className="flex-1">Cash Flow</TabsTrigger>
                 <TabsTrigger value="expenses" className="flex-1">Expenses</TabsTrigger>
+                <TabsTrigger value="income" className="flex-1">Income</TabsTrigger>
               </TabsList>
-              <TabsContent value="cash-flow" className="mt-4">
-                <CashFlowChart data={generateCashFlowData()} />
-              </TabsContent>
               <TabsContent value="expenses" className="mt-4">
                 <ExpensePieChart data={generateExpenseData()} />
+              </TabsContent>
+              <TabsContent value="income" className="mt-4">
+                <IncomeChart data={generateIncomeData()} />
               </TabsContent>
             </Tabs>
             
